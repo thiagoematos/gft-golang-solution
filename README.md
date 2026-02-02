@@ -1,258 +1,211 @@
-# Guia de Solução - Para o Avaliador
+# Teste de Senioridade - Desenvolvedor Golang
+**Tempo: 10 minutos**
 
-## Objetivo do Teste
+## Desafio: API RESTful com Validações
 
-Este teste avalia:
-1. **Leitura de código**: Identificar problemas
-2. **Boas práticas Go**: Naming, estrutura, idiomas
-3. **Design**: Separação de responsabilidades
-4. **Qualidade**: Código limpo e manutenível
-5. **API HTTP**: net/http nativo, JSON, handlers idiomáticos
+Você precisa criar uma **API HTTP simples** para gerenciar usuários, com validações robustas.
 
----
+### Parte 1: Refatoração de Código
 
-## Análise da Solução
+Você recebeu um código funcional mas mal escrito. Refatore-o seguindo boas práticas Go.
 
-### ⭐ Nível PLENO - Melhorias Superficiais
-
-Um desenvolvedor **pleno** faz mudanças básicas:
+**Código Original (Ruim):**
 
 ```go
-// User ao invés de user (exportado)
-type User struct {
-    Name  string
-    Age   int
-    Email string
-}
+package main
 
-func Process(u User) error {
-    if u.Name == "" {
-        return errors.New("name is empty")
-    }
-    // ... mesmas validações
-    
-    // Usa Printf ao invés de concatenação
-    fmt.Printf("User %s is %d years old\n", u.Name, u.Age)
-    fmt.Printf("Email: %s\n", u.Email)
-    
-    return nil
-}
-```
-
-✅ **Melhorias feitas**:
-- Capitalização correta (User, Name, Age, Email)
-- Usa `fmt.Printf` ao invés de concatenação de strings
-- Talvez adicione alguns comentários
-
-⚠️ **O que falta**:
-- Validação ainda está misturada com processamento
-- Não extrai constantes (150, 0)
-- Erros não são descritivos
-- Não usa métodos
-- Código ainda é difícil de testar
-
----
-
-### ⭐⭐ Nível SÊNIOR - Refatoração Completa
-
-Um desenvolvedor **sênior** faz refatoração estrutural:
-
-```go
-const (
-    MinAge = 0
-    MaxAge = 150
+import (
+    "errors"
+    "fmt"
 )
 
-type User struct {
-    Name  string
-    Age   int
-    Email string
+type user struct {
+    name string
+    age int
+    email string
 }
 
-// Validate separa lógica de validação
-func (u User) Validate() error {
-    if u.Name == "" {
-        return fmt.Errorf("validation failed: name cannot be empty")
+func process(u user) error {
+    if u.name == "" {
+        return errors.New("name is empty")
+    }
+    if u.age < 0 {
+        return errors.New("age is negative")
+    }
+    if u.age > 150 {
+        return errors.New("age is too high")
+    }
+    if u.email == "" {
+        return errors.New("email is empty")
     }
     
-    if u.Age < MinAge {
-        return fmt.Errorf("validation failed: age cannot be negative (got %d)", u.Age)
-    }
+    fmt.Println("User " + u.name + " is " + fmt.Sprintf("%d", u.age) + " years old")
+    fmt.Println("Email: " + u.email)
     
-    if u.Age > MaxAge {
-        return fmt.Errorf("validation failed: age %d exceeds maximum (%d)", u.Age, MaxAge)
-    }
-    
-    if u.Email == "" {
-        return fmt.Errorf("validation failed: email cannot be empty")
-    }
-    
-    return nil
-}
-
-// String implementa Stringer para formatação
-func (u User) String() string {
-    return fmt.Sprintf("User %s is %d years old (Email: %s)", 
-        u.Name, u.Age, u.Email)
-}
-
-// ProcessUser agora só foca no processamento
-func ProcessUser(u User) error {
-    if err := u.Validate(); err != nil {
-        return err
-    }
-    
-    fmt.Println(u)  // Usa String() automaticamente
     return nil
 }
 ```
 
-✅ **Por que é sênior**:
-- ✅ **Método Validate()**: Separação de responsabilidades
-- ✅ **Constantes**: MinAge/MaxAge extraídos (Single Source of Truth)
-- ✅ **Método String()**: Implementa interface Stringer
-- ✅ **Erros descritivos**: Usa `fmt.Errorf` com contexto
-- ✅ **Testabilidade**: Validate() testável isoladamente
-- ✅ **Documentação**: Comentários godoc
-- ✅ **Extensibilidade**: Fácil adicionar validações
+### Parte 2: Criar Endpoint HTTP
 
-**Diferenciais bônus** (sênior forte):
-- Validação de email com regex
-- Custom error types
-- Validação de múltiplos campos com slice de erros
-- Builder pattern para User
+Crie um endpoint **POST /users** usando **net/http nativo** (sem frameworks) que:
 
----
+1. ✅ Recebe JSON com dados do usuário
+2. ✅ Valida os dados usando suas funções de validação
+3. ✅ Retorna resposta apropriada (200 ou 400)
+4. ✅ Usa handlers idiomáticos
 
-## Checklist de Avaliação (100 pontos)
+**Exemplo de Request:**
+```bash
+POST /users
+Content-Type: application/json
 
-### Parte 1: Refatoração (50 pts)
+{
+    "name": "John Doe",
+    "age": 30,
+    "email": "john@example.com"
+}
+```
 
-**Melhorias Básicas (15 pts)**
-- [ ] Capitaliza User e campos **(5 pts)**
-- [ ] Usa `fmt.Printf` ao invés de concatenação **(5 pts)**
-- [ ] Código funciona corretamente **(5 pts)**
+**Exemplo de Response (Sucesso):**
+```json
+{
+    "message": "User created successfully",
+    "user": {
+        "name": "John Doe",
+        "age": 30,
+        "email": "john@example.com"
+    }
+}
+```
 
-**Estrutura e Design (20 pts)**
-- [ ] Método `Validate()` separado **(10 pts)**
-- [ ] Constantes MinAge/MaxAge **(5 pts)**
-- [ ] Erros descritivos com `fmt.Errorf` **(5 pts)**
+**Exemplo de Response (Erro):**
+```json
+{
+    "error": "validation failed: age must be between 0 and 150"
+}
+```
 
-**Qualidade (15 pts)**
-- [ ] Método `String()` implementado **(10 pts)**
-- [ ] Comentários godoc **(5 pts)**
+### Requisitos
 
-### Parte 2: Endpoint HTTP (50 pts)
+- ✅ Código deve seguir **boas práticas Go**
+- ✅ Usar **net/http nativo** (sem Gin, Echo, etc.)
+- ✅ **Validações** reutilizáveis (métodos)
+- ✅ **JSON** marshaling/unmarshaling correto
+- ✅ **HTTP status codes** apropriados (200, 400, 405)
+- ✅ Máximo **10 minutos**
 
-**Funcionalidade Básica (20 pts)**
-- [ ] Handler funciona e responde **(10 pts)**
-- [ ] Parse de JSON correto **(5 pts)**
-- [ ] Retorna JSON na resposta **(5 pts)**
+## Avaliação
 
-**HTTP Idiomático (20 pts)**
-- [ ] Valida método HTTP (apenas POST) **(5 pts)**
-- [ ] Status codes corretos (200, 400, 405) **(10 pts)**
-- [ ] Header Content-Type application/json **(5 pts)**
+### ⭐ Desenvolvedor Pleno
 
-**Qualidade (10 pts)**
-- [ ] Helper functions (respondWithJSON, etc) **(5 pts)**
-- [ ] Error handling robusto **(5 pts)**
+**Refatoração básica:**
+- Renomeia `user` para `User` (exportado)
+- Usa `fmt.Printf` ao invés de concatenação
+- Código funciona mas mudanças são superficiais
 
-### Bônus Sênior
-- [ ] Validação de email com regex **(+5 pts)**
-- [ ] defer r.Body.Close() **(+3 pts)**
-- [ ] Logging de operações **(+2 pts)**
-- [ ] Testes unitários **(+5 pts)**
+**Endpoint básico:**
+- Cria handler que funciona
+- Faz parse de JSON
+- Retorna alguma resposta
+- **Pode ter**: Error handling básico, código um pouco verboso
 
----
+### ⭐⭐ Desenvolvedor Sênior
 
-## Diferenciação Rápida
+**Refatoração completa:**
+- ✅ **Método Validate()** separado e testável
+- ✅ **String() method** implementando Stringer
+- ✅ **Constantes** para valores mágicos (MinAge/MaxAge)
+- ✅ **Erros descritivos** com `fmt.Errorf`
+- ✅ **Código limpo** e bem organizado
+- ✅ **Comentários godoc**
 
-| Aspecto | Pleno | Sênior |
-|---------|-------|--------|
-| **Refatoração** | Superficial | ✅ Estrutural |
-| **Validação** | ❌ Misturada | ✅ Método Validate() |
-| **Constantes** | ❌ Hardcoded | ✅ Min/MaxAge |
-| **String()** | ❌ Não tem | ✅ Implementa |
-| **Handler** | ⚠️ Básico | ✅ Idiomático |
-| **HTTP Status** | ⚠️ Só 200 | ✅ 200/400/405 |
-| **JSON** | ⚠️ Funciona | ✅ + helpers |
-| **Error handling** | ⚠️ Básico | ✅ Robusto |
-| **Tempo** | ~10 min | ~8-9 min |
+**Endpoint profissional:**
+- ✅ **Handler idiomático** com `http.HandlerFunc`
+- ✅ **JSON encoding/decoding** correto
+- ✅ **HTTP status codes** apropriados (200, 400, 405)
+- ✅ **Validação de método** (apenas POST)
+- ✅ **Error responses** em JSON
+- ✅ **Separação de concerns** (handler vs lógica de negócio)
 
----
+### Exemplos de Diferenciais
 
-## Red Flags 🚩
+**Pleno:**
+```go
+// Handler básico funcional
+func createUser(w http.ResponseWriter, r *http.Request) {
+    var u User
+    json.NewDecoder(r.Body).Decode(&u)
+    
+    if err := u.Validate(); err != nil {
+        w.WriteHeader(400)
+        json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+        return
+    }
+    
+    w.WriteHeader(200)
+    json.NewEncoder(w).Encode(u)
+}
+```
 
-### Críticos
-- ❌ Código não funciona após refatoração
-- ❌ Piora a legibilidade
-- ❌ Remove funcionalidade
+**Sênior:**
+```go
+// Handler robusto e idiomático
+func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
+    // Valida método HTTP
+    if r.Method != http.MethodPost {
+        respondWithError(w, http.StatusMethodNotAllowed, "method not allowed")
+        return
+    }
+    
+    // Parse JSON
+    var user User
+    if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+        respondWithError(w, http.StatusBadRequest, "invalid JSON")
+        return
+    }
+    defer r.Body.Close()
+    
+    // Valida
+    if err := user.Validate(); err != nil {
+        respondWithError(w, http.StatusBadRequest, err.Error())
+        return
+    }
+    
+    // Sucesso
+    respondWithJSON(w, http.StatusOK, map[string]interface{}{
+        "message": "User created successfully",
+        "user":    user,
+    })
+}
 
-### Preocupantes
-- ⚠️ Não capitaliza structs/campos
-- ⚠️ Ainda concatena strings
-- ⚠️ Não extrai validação
-- ⚠️ Over-engineering (adiciona patterns desnecessários)
+// Helper functions (separação de concerns)
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(code)
+    json.NewEncoder(w).Encode(payload)
+}
 
----
+func respondWithError(w http.ResponseWriter, code int, message string) {
+    respondWithJSON(w, code, map[string]string{"error": message})
+}
+```
 
-## O que Observar
+## Como Executar
 
-### Pleno típico faz:
-1. Renomeia `user` → `User`
-2. Usa `fmt.Printf`
-3. Talvez adicione comentários
-4. **Para por aqui**
+```bash
+# Rodar servidor
+go run main.go
 
-### Sênior típico faz:
-1. Tudo que o pleno faz
-2. **Cria método `Validate()`**
-3. **Extrai constantes**
-4. **Implementa `String()`**
-5. **Melhora mensagens de erro**
-6. Pensa em testabilidade
+# Testar endpoint (em outro terminal)
+curl -X POST http://localhost:8080/users \
+  -H "Content-Type: application/json" \
+  -d '{"name":"John","age":30,"email":"john@example.com"}'
+```
 
----
+## Entrega (10 minutos)
 
-## Perguntas de Follow-up
+1. Arquivo com código refatorado + endpoint HTTP
+2. Breve comentário explicando **principais decisões de design**
 
-### 1. "Por que você criou o método Validate()?"
-- **Pleno**: "Para organizar melhor" (vago)
-- **Sênior**: "Separação de responsabilidades, testabilidade, reutilização"
-
-### 2. "Por que extrair MinAge/MaxAge em constantes?"
-- **Pleno**: "É boa prática"
-- **Sênior**: "Single Source of Truth, fácil mudar, auto-documentação"
-
-### 3. "O que é a interface Stringer?"
-- **Pleno**: Não sabe ou explica de forma vaga
-- **Sênior**: "Interface com String() string, usada por fmt.Print automaticamente"
-
----
-
-## Tempo Esperado
-
-**10 minutos** é suficiente:
-
-✅ **< 6 min** + todas as melhorias → **Sênior forte**  
-✅ **6-8 min** + Validate() + constantes → **Sênior**  
-✅ **8-10 min** + melhorias básicas → **Pleno sólido**  
-⚠️ **~10 min** só naming → **Pleno júnior**  
-❌ **Não completa** ou quebra código → **Júnior**
-
----
-
-## Conclusão
-
-Este teste é excelente porque:
-
-✅ **Não requer conhecimento específico** (sem concorrência complexa)  
-✅ **Avalia qualidade de código** diretamente  
-✅ **Diferencia claramente** através de design  
-✅ **Prático** - refatoração é trabalho real  
-✅ **Rápido** - código pequeno, mudanças focadas  
-
-**Ponto-chave**: Validate() + String() + constantes = Sênior
-
-**Boa avaliação!** 🎯
+**Boa sorte! ⏱️**
